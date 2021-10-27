@@ -34,6 +34,7 @@ public class IntegerType extends DataType<Integer> implements Streamer<Integer>,
     public static final IntegerType INSTANCE = new IntegerType();
     public static final int ID = 9;
     private static final int INTEGER_SIZE = (int) RamUsageEstimator.shallowSizeOfInstance(Integer.class);
+    private static final StorageSupport<Number> STORAGE = new StorageSupport<>(true, true, new IntEqQuery());
 
     private IntegerType() {
     }
@@ -122,5 +123,10 @@ public class IntegerType extends DataType<Integer> implements Streamer<Integer>,
     @Override
     public int fixedSize() {
         return INTEGER_SIZE;
+    }
+
+    @Override
+    public StorageSupport<Number> storageSupport() {
+        return STORAGE;
     }
 }

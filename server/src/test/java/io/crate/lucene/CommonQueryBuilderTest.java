@@ -69,7 +69,7 @@ public class CommonQueryBuilderTest extends LuceneQueryBuilderTest {
     @Test
     public void testWhereRefEqNullWithDifferentTypes() throws Exception {
         for (DataType<?> type : DataTypes.PRIMITIVE_TYPES) {
-            if (!type.supportsStorage()) {
+            if (type.storageSupport() == null) {
                 continue;
             }
             // ensure the test is operating on a fresh, empty cluster state (no existing tables)
@@ -333,9 +333,9 @@ public class CommonQueryBuilderTest extends LuceneQueryBuilderTest {
     @Test
     public void testIsNullOnObjectArray() throws Exception {
         Query isNull = convert("o_array IS NULL");
-        assertThat(isNull.toString(), is("+*:* -ConstantScore(_field_names:o_array)"));
+        assertThat(isNull.toString(), is("+*:* -ConstantScore(ConstantScore(DocValuesFieldExistsQuery [field=o_array.xs]))"));
         Query isNotNull = convert("o_array IS NOT NULL");
-        assertThat(isNotNull.toString(), is("ConstantScore(DocValuesFieldExistsQuery [field=o_array.xs])"));
+        assertThat(isNotNull.toString(), is("ConstantScore(ConstantScore(DocValuesFieldExistsQuery [field=o_array.xs]))"));
     }
 
     @Test
@@ -581,6 +581,11 @@ public class CommonQueryBuilderTest extends LuceneQueryBuilderTest {
     public void test_eq_on_bool_uses_termquery() throws Exception {
         Query query = convert("bool_col = true");
         assertThat(query, instanceOf(TermQuery.class));
+    }
 
+    @Test
+    public void test_is_null_on_analyzed_text_column_uses_norms_query() throws Exception {
+        Query query = convert("content is null");
+        assertThat(query.toString(), is("+*:* -NormsFieldExistsQuery [field=content]"));
     }
 }

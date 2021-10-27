@@ -64,9 +64,4 @@ public class OidVectorType extends DataType<List<Integer>> {
     public List<Integer> sanitizeValue(Object value) {
         return (List<Integer>) value;
     }
-
-    @Override
-    public boolean supportsStorage() {
-        return false;
-    }
 }

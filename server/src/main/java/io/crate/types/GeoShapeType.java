@@ -39,6 +39,7 @@ public class GeoShapeType extends DataType<Map<String, Object>> implements Strea
 
     public static final int ID = 14;
     public static final GeoShapeType INSTANCE = new GeoShapeType();
+    private static final StorageSupport<Map<String, Object>> STORAGE = new StorageSupport<>(false, true, null);
 
     private GeoShapeType() {
     }
@@ -122,5 +123,10 @@ public class GeoShapeType extends DataType<Map<String, Object>> implements Strea
     @Override
     public void writeValueTo(StreamOutput out, Map<String, Object> v) throws IOException {
         out.writeMap(v);
+    }
+
+    @Override
+    public StorageSupport<Map<String, Object>> storageSupport() {
+        return STORAGE;
     }
 }

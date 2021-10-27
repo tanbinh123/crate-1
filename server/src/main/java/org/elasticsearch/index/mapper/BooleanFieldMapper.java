@@ -34,16 +34,10 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.index.query.QueryShardContext;
 
 /**
  * A field mapper for boolean fields.
@@ -133,14 +127,6 @@ public class BooleanFieldMapper extends FieldMapper {
             return CONTENT_TYPE;
         }
 
-        @Override
-        public Query existsQuery(QueryShardContext context) {
-            if (hasDocValues()) {
-                return new DocValuesFieldExistsQuery(name());
-            } else {
-                return new TermQuery(new Term(FieldNamesFieldMapper.NAME, name()));
-            }
-        }
 
         @Override
         public BytesRef indexedValueForSearch(Object value) {
@@ -165,32 +151,6 @@ public class BooleanFieldMapper extends FieldMapper {
                     throw new IllegalArgumentException("Can't parse boolean value [" +
                                     sValue + "], expected [true] or [false]");
             }
-        }
-
-        @Override
-        public Boolean valueForDisplay(Object value) {
-            if (value == null) {
-                return null;
-            }
-            switch (value.toString()) {
-                case "F":
-                    return false;
-                case "T":
-                    return true;
-                default:
-                    throw new IllegalArgumentException("Expected [T] or [F] but got [" + value + "]");
-            }
-        }
-
-        @Override
-        public Query rangeQuery(Object lowerTerm, Object upperTerm, boolean includeLower, boolean includeUpper) {
-            failIfNotIndexed();
-            return new TermRangeQuery(
-                name(),
-                lowerTerm == null ? null : indexedValueForSearch(lowerTerm),
-                upperTerm == null ? null : indexedValueForSearch(upperTerm),
-                includeLower,
-                includeUpper);
         }
     }
 

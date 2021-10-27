@@ -32,6 +32,9 @@ public class ByteType extends DataType<Byte> implements Streamer<Byte>, FixedWid
 
     public static final ByteType INSTANCE = new ByteType();
     public static final int ID = 2;
+    private static final StorageSupport<Number> STORAGE = new StorageSupport<>(
+        true, true, new IntEqQuery()
+    );
 
     private ByteType() {
     }
@@ -113,5 +116,10 @@ public class ByteType extends DataType<Byte> implements Streamer<Byte>, FixedWid
     @Override
     public int fixedSize() {
         return 16; // object overhead + 1 byte + 7 byte padding
+    }
+
+    @Override
+    public StorageSupport<Number> storageSupport() {
+        return STORAGE;
     }
 }

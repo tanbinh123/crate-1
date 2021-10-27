@@ -59,6 +59,8 @@ public final class TimestampType extends DataType<Long>
         TimestampType::parseTimestampIgnoreTimeZone,
         Precedence.TIMESTAMP);
 
+    private static final StorageSupport<Long> STORAGE = new StorageSupport<>(true, true, new LongEqQuery());
+
     private final int id;
     private final String name;
     private final Function<String, Long> parse;
@@ -205,4 +207,10 @@ public final class TimestampType extends DataType<Long>
         .optionalStart()
         .appendPattern("[Z][VV][x][xx][xxx]")
         .toFormatter(Locale.ENGLISH).withResolverStyle(ResolverStyle.STRICT);
+
+
+    @Override
+    public StorageSupport<Long> storageSupport() {
+        return STORAGE;
+    }
 }

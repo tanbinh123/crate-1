@@ -21,9 +21,7 @@ package org.elasticsearch.index.mapper;
 
 import java.util.Objects;
 
-import org.apache.lucene.search.Query;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
-import org.elasticsearch.index.query.QueryShardContext;
 
 /**
  * This defines the core properties and functions to operate on a field.
@@ -83,30 +81,12 @@ public abstract class MappedFieldType {
         this.searchQuoteAnalyzer = analyzer;
     }
 
-
-    /** Given a value that comes from the stored fields API, convert it to the
-     *  expected type. For instance a date field would store dates as longs and
-     *  format it back to a string in this method. */
-    public Object valueForDisplay(Object value) {
-        return value;
-    }
-
     /**
      * Returns true if the field is searchable.
      */
     public boolean isSearchable() {
         return isIndexed;
     }
-
-    /**
-     * Factory method for range queries.
-     * @param relation the relation, nulls should be interpreted like INTERSECTS
-     */
-    public Query rangeQuery(Object lowerTerm, Object upperTerm, boolean includeLower, boolean includeUpper) {
-        throw new IllegalArgumentException("Field [" + name + "] of type [" + typeName() + "] does not support range queries");
-    }
-
-    public abstract Query existsQuery(QueryShardContext context);
 
     /** @throws IllegalArgumentException if the fielddata is not supported on this type.
      *  An IllegalArgumentException is needed in order to return an http error 400

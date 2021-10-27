@@ -341,7 +341,7 @@ public class AnalyzedColumnDefinition<T> {
                 }
             } else {
                 throw new IllegalArgumentException(
-                    String.format(Locale.ENGLISH, "Invalid storage option \"%s\"", storageSettings.get(property)));
+                    String.format(Locale.ENGLISH, "Invalid STORAGE WITH option `%s`", property));
             }
         }
     }
@@ -387,7 +387,7 @@ public class AnalyzedColumnDefinition<T> {
                                                              "INDEX constraint cannot be used on columns of type \"%s\"", dataType));
         }
 
-        if (!dataType.supportsStorage()) {
+        if (dataType.storageSupport() == null) {
             throw new IllegalArgumentException("Cannot use the type `" + dataType.getName() + "` for column: " + name);
         }
         if (hasPrimaryKeyConstraint()) {

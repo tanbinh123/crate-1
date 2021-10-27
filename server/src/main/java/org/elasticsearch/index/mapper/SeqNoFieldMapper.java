@@ -30,14 +30,10 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
-import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.mapper.ParseContext.Document;
-import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.index.seqno.SequenceNumbers;
 
 /**
@@ -140,36 +136,6 @@ public class SeqNoFieldMapper extends MetadataFieldMapper {
                 value = ((BytesRef) value).utf8ToString();
             }
             return Long.parseLong(value.toString());
-        }
-
-        @Override
-        public Query existsQuery(QueryShardContext context) {
-            return new DocValuesFieldExistsQuery(name());
-        }
-
-        @Override
-        public Query rangeQuery(Object lowerTerm, Object upperTerm, boolean includeLower, boolean includeUpper) {
-            long l = Long.MIN_VALUE;
-            long u = Long.MAX_VALUE;
-            if (lowerTerm != null) {
-                l = parse(lowerTerm);
-                if (includeLower == false) {
-                    if (l == Long.MAX_VALUE) {
-                        return new MatchNoDocsQuery();
-                    }
-                    ++l;
-                }
-            }
-            if (upperTerm != null) {
-                u = parse(upperTerm);
-                if (includeUpper == false) {
-                    if (u == Long.MIN_VALUE) {
-                        return new MatchNoDocsQuery();
-                    }
-                    --u;
-                }
-            }
-            return LongPoint.newRangeQuery(name(), l, u);
         }
     }
 
