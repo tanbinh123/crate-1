@@ -27,8 +27,10 @@ import io.crate.metadata.RelationInfo;
 import io.crate.metadata.RelationName;
 import io.crate.metadata.Schemas;
 import io.crate.metadata.doc.DocTableInfo;
+import io.crate.metadata.table.TableInfo;
 import io.crate.replication.logical.LogicalReplicationService;
 import io.crate.replication.logical.exceptions.PublicationUnknownException;
+import io.crate.user.*;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionType;
 import org.elasticsearch.action.support.IndicesOptions;
@@ -56,6 +58,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static io.crate.user.Privilege.Type.VALUES;
+
 public class PublicationsStateAction extends ActionType<PublicationsStateAction.Response> {
 
     public static final String NAME = "internal:crate:replication/logical/publication/state";
@@ -75,6 +79,7 @@ public class PublicationsStateAction extends ActionType<PublicationsStateAction.
 
         private final LogicalReplicationService logicalReplicationService;
         private final Schemas schemas;
+        private final UserLookup userLookup;
 
         @Inject
         public TransportAction(TransportService transportService,
@@ -82,7 +87,8 @@ public class PublicationsStateAction extends ActionType<PublicationsStateAction.
                                ThreadPool threadPool,
                                IndexNameExpressionResolver indexNameExpressionResolver,
                                LogicalReplicationService logicalReplicationService,
-                               Schemas schemas) {
+                               Schemas schemas,
+                               UserLookup userLookup) {
             super(Settings.EMPTY,
                   NAME,
                   false,
@@ -93,6 +99,7 @@ public class PublicationsStateAction extends ActionType<PublicationsStateAction.
                   Request::new);
             this.logicalReplicationService = logicalReplicationService;
             this.schemas = schemas;
+            this.userLookup = userLookup;
 
             TransportActionProxy.registerProxyAction(transportService, NAME, Response::new);
         }
@@ -112,6 +119,7 @@ public class PublicationsStateAction extends ActionType<PublicationsStateAction.
                                        ClusterState state,
                                        ActionListener<Response> listener) throws Exception {
             List<RelationDetails> relationDetails = new ArrayList<>();
+            UserManager m;
             for (var publicationName : request.publications()) {
                 var publication = logicalReplicationService.publications().get(publicationName);
                 if (publication == null) {
@@ -121,14 +129,18 @@ public class PublicationsStateAction extends ActionType<PublicationsStateAction.
 
                 List<RelationName> relationNames;
                 if (publication.isForAllTables()) {
+                    var user = userLookup.findUser(publication.owner());
                     relationNames = InformationSchemaIterables.tablesStream(schemas)
                         .filter(t -> t instanceof DocTableInfo)
+                        .filter(t -> userCanPublish(t, user))
                         .map(RelationInfo::ident)
                         .toList();
                 } else {
                     relationNames = publication.tables();
                 }
                 for (var relationName : relationNames) {
+                    // No need to call userCanPublish() since for the static list of tables
+                    // this check was already done on the publication creation.
                     var relationDetail = relationDetail(relationName, state);
                     if (relationDetail != null) {
                         relationDetails.add(relationDetail);
@@ -142,6 +154,8 @@ public class PublicationsStateAction extends ActionType<PublicationsStateAction.
             );
             listener.onResponse(response);
         }
+
+
 
         @Override
         protected ClusterBlockException checkBlock(Request request,
@@ -167,6 +181,15 @@ public class PublicationsStateAction extends ActionType<PublicationsStateAction.
                 partitionIndices.forEach(i -> relationDetails.concreteIndices.add(i.getName()));
             }
             return relationDetails;
+        }
+
+        private boolean userCanPublish(TableInfo t, User publicationOwner) {
+            for (Privilege.Type type: VALUES) {
+                if (!publicationOwner.hasPrivilege(type, Privilege.Clazz.TABLE, t.ident().fqn(), Schemas.DOC_SCHEMA_NAME)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
