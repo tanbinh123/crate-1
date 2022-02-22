@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 import org.elasticsearch.action.support.replication.TransportReplicationAction;
 import org.elasticsearch.cluster.action.shard.ShardStateAction;
 import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.breaker.CircuitBreakingException;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Singleton;
@@ -81,6 +82,7 @@ import io.crate.metadata.Schemas;
 import io.crate.metadata.TransactionContext;
 import io.crate.metadata.doc.DocTableInfo;
 import io.crate.metadata.table.Operation;
+import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * Realizes Upserts of tables which either results in an Insert or an Update.
@@ -206,6 +208,9 @@ public class TransportShardUpsertAction extends TransportShardAction<ShardUpsert
     @Override
     protected WriteReplicaResult<ShardUpsertRequest> processRequestItemsOnReplica(IndexShard indexShard, ShardUpsertRequest request) throws IOException {
         Translog.Location location = null;
+        if (ThreadLocalRandom.current().nextInt(1, 50) == 1) {
+            throw new CircuitBreakingException("simulate a circuit breaking exception");
+        }
         for (ShardUpsertRequest.Item item : request.items()) {
             if (item.source() == null) {
                 if (logger.isTraceEnabled()) {
