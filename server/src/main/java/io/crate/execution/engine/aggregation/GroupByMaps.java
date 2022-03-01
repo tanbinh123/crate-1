@@ -69,21 +69,6 @@ public final class GroupByMaps {
     }
 
     public static <K, V> Supplier<Map<K, V>> mapForType(DataType<K> type) {
-        switch (type.id()) {
-            case ByteType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new ByteObjectHashMap<>());
-            case ShortType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new ShortObjectHashMap<>());
-            case IntegerType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new IntObjectHashMap<>());
-
-            case LongType.ID:
-            case TimestampType.ID_WITH_TZ:
-            case TimestampType.ID_WITHOUT_TZ:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new LongObjectHashMap<>());
-
-            default:
-                return HashMap::new;
-        }
+        return HashMap::new;
     }
 }
