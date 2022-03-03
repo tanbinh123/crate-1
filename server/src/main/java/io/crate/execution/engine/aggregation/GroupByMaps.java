@@ -34,6 +34,13 @@ import io.netty.util.collection.ByteObjectHashMap;
 import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.LongObjectHashMap;
 import io.netty.util.collection.ShortObjectHashMap;
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import javax.annotation.Nullable;
@@ -71,19 +78,19 @@ public final class GroupByMaps {
     public static <K, V> Supplier<Map<K, V>> mapForType(DataType<K> type) {
         switch (type.id()) {
             case ByteType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new ByteObjectHashMap<>());
+                return () -> (Map) new PrimitiveMapWithNulls<>(new Byte2ObjectOpenHashMap<>());
             case ShortType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new ShortObjectHashMap<>());
+                return () -> (Map) new PrimitiveMapWithNulls<>(new Short2ObjectOpenHashMap<>());
             case IntegerType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new IntObjectHashMap<>());
+                return () -> (Map) new PrimitiveMapWithNulls<>(new Int2ObjectOpenHashMap<>());
 
             case LongType.ID:
             case TimestampType.ID_WITH_TZ:
             case TimestampType.ID_WITHOUT_TZ:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new LongObjectHashMap<>());
+                return () -> (Map) new PrimitiveMapWithNulls<>(new Long2ObjectOpenHashMap<>());
 
             default:
-                return HashMap::new;
+                return Object2ObjectOpenHashMap::new;
         }
     }
 }

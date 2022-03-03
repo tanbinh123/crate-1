@@ -92,6 +92,7 @@ dependencies {
         exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
     }
 
+    implementation 'it.unimi.dsi:fastutil:8.5.8'
     implementation "com.google.code.findbugs:jsr305:${versions.jsr305}"
 
     implementation "joda-time:joda-time:${versions.jodatime}"
