@@ -21,6 +21,7 @@
 
 package io.crate.execution.engine.aggregation;
 
+import com.koloboke.collect.map.hash.*;
 import io.crate.breaker.RamAccounting;
 import io.crate.breaker.SizeEstimator;
 import io.crate.types.ByteType;
@@ -30,14 +31,9 @@ import io.crate.types.IntegerType;
 import io.crate.types.LongType;
 import io.crate.types.ShortType;
 import io.crate.types.TimestampType;
-import io.netty.util.collection.ByteObjectHashMap;
-import io.netty.util.collection.IntObjectHashMap;
-import io.netty.util.collection.LongObjectHashMap;
-import io.netty.util.collection.ShortObjectHashMap;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -71,19 +67,19 @@ public final class GroupByMaps {
     public static <K, V> Supplier<Map<K, V>> mapForType(DataType<K> type) {
         switch (type.id()) {
             case ByteType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new ByteObjectHashMap<>());
+                return () -> (Map) new PrimitiveMapWithNulls<>(HashByteShortMaps.newMutableMap());
             case ShortType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new ShortObjectHashMap<>());
+                return () -> (Map) new PrimitiveMapWithNulls<>(HashShortByteMaps.newMutableMap());
             case IntegerType.ID:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new IntObjectHashMap<>());
+                return () -> (Map) new PrimitiveMapWithNulls<>(HashIntObjMaps.newMutableMap());
 
             case LongType.ID:
             case TimestampType.ID_WITH_TZ:
             case TimestampType.ID_WITHOUT_TZ:
-                return () -> (Map) new PrimitiveMapWithNulls<>(new LongObjectHashMap<>());
+                return () -> (Map) new PrimitiveMapWithNulls<>(HashLongObjMaps.newMutableMap());
 
             default:
-                return HashMap::new;
+                return HashObjObjMaps::newMutableMap;
         }
     }
 }
