@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.elasticsearch.action.support.replication.TransportReplicationAction;
+import org.elasticsearch.action.support.replication.TransportReplicationAction;
 import org.elasticsearch.cluster.ClusterChangedEvent;
 import org.elasticsearch.cluster.ClusterStateListener;
 import org.elasticsearch.cluster.InternalClusterInfoService;
@@ -173,7 +175,9 @@ public final class CrateSettings implements ClusterStateListener {
         UDCService.UDC_INITIAL_DELAY_SETTING,
         UDCService.UDC_INTERVAL_SETTING,
         // Memory
-        MemoryManagerFactory.MEMORY_ALLOCATION_TYPE
+        MemoryManagerFactory.MEMORY_ALLOCATION_TYPE,
+
+        TransportReplicationAction.REPLICATION_RETRY_TIMEOUT
     );
 
 
