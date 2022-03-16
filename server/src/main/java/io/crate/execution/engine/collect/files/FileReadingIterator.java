@@ -178,7 +178,7 @@ public class FileReadingIterator implements BatchIterator<Row> {
                 releaseBatchIteratorState();
                 return false;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             lineProcessor.setFailure(e.getMessage());
             return true;
         }

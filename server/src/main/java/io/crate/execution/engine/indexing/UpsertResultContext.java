@@ -32,7 +32,7 @@ import org.elasticsearch.cluster.node.DiscoveryNode;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 
 public class UpsertResultContext {
 
@@ -46,9 +46,7 @@ public class UpsertResultContext {
             }
 
             @Override
-            Predicate<ShardedRequests> getHasSourceUriFailureChecker() {
-                return (ignored) -> false;
-            }
+            Consumer<ShardedRequests> getUriFailureRecorder() { return (s) -> {}; }
         };
     }
 
@@ -62,9 +60,7 @@ public class UpsertResultContext {
             }
 
             @Override
-            Predicate<ShardedRequests> getHasSourceUriFailureChecker() {
-                return (ignored) -> false;
-            }
+            Consumer<ShardedRequests> getUriFailureRecorder() { return (s) -> {}; }
         };
     }
 
@@ -130,14 +126,12 @@ public class UpsertResultContext {
         return (s, f) -> s.addFailedItem(sourceUriInput.value(), f, lineNumberInput.value());
     }
 
-    Predicate<ShardedRequests> getHasSourceUriFailureChecker() {
+    Consumer<ShardedRequests> getUriFailureRecorder() {
         return s -> {
             String sourceUriFailure = sourceUriFailureInput.value();
             if (sourceUriFailure != null) {
-                s.addFailedUri(sourceUriInput.value(), sourceUriFailureInput.value());
-                return true;
+                s.addFailedItem(sourceUriInput.value(), sourceUriFailure, lineNumberInput.value());
             }
-            return false;
         };
     }
 }

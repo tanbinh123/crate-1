@@ -39,7 +39,6 @@ public final class ShardedRequests<TReq extends ShardRequest<TReq, TItem>, TItem
 
     final Map<String, List<ItemAndRoutingAndSourceInfo<TItem>>> itemsByMissingIndex = new HashMap<>();
     final Map<String, List<ReadFailureAndLineNumber>> itemsWithFailureBySourceUri = new HashMap<>();
-    final Map<String, String> sourceUrisWithFailure = new HashMap<>();
     final List<RowSourceInfo> rowSourceInfos = new ArrayList<>();
     final Map<ShardLocation, TReq> itemsByShard = new HashMap<>();
 
@@ -84,11 +83,6 @@ public final class ShardedRequests<TReq extends ShardRequest<TReq, TItem>, TItem
         List<ReadFailureAndLineNumber> itemsWithFailure = itemsWithFailureBySourceUri.computeIfAbsent(
             sourceUri, k -> new ArrayList<>());
         itemsWithFailure.add(new ReadFailureAndLineNumber(readFailure, lineNumber));
-    }
-
-    void addFailedUri(String sourceUri, String uriReadFailure) {
-        assert sourceUrisWithFailure.get(sourceUri) == null : "A failure was already stored for this URI, should happen only once";
-        sourceUrisWithFailure.put(sourceUri, uriReadFailure);
     }
 
     @Override

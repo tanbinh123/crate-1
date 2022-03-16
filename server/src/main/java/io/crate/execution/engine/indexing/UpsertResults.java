@@ -66,13 +66,6 @@ class UpsertResults {
         }
     }
 
-    void addUriFailure(String uri, String uriFailure) {
-        assert uri != null : "expecting URI argument not to be null";
-        Result result = getResultSafe(uri);
-        result.sourceUriFailure = true;
-        result.updateErrorCount(uriFailure, Collections.emptyList(), 1L);
-    }
-
     private Result getResultSafe(@Nullable String uri) {
         Result result = resultsByUri.get(uri);
         if (result == null) {

@@ -148,6 +148,15 @@ public class TransportShardUpsertAction extends TransportShardAction<ShardUpsert
 
         Translog.Location translogLocation = null;
         for (ShardUpsertRequest.Item item : request.items()) {
+            if (item.insertValues() != null && (item.insertValues().length == 0 || item.insertValues()[0] == null)) {
+                // If item.insertValues is not null indexItem() call below will try to perform insert which, in turn,
+                // will try to validate source.
+                // insertValues array can be not null but contain null value if CSV parser fails early, for example, when
+                // a CSV line has more values than header columns.
+                // This null value passed further to the validation can lead to a cryptic NPE error in a summary which is not needed as it will
+                // reported anyway as a result of the throwing exception (which lead to receiving null in the first place).
+                continue;
+            }
             int location = item.location();
             if (killed.get()) {
                 // set failure on response and skip all next items.

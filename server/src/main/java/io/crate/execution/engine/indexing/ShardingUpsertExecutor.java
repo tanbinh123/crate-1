@@ -156,7 +156,6 @@ public class ShardingUpsertExecutor
 
     public CompletableFuture<UpsertResults> execute(ShardedRequests<ShardUpsertRequest, ShardUpsertRequest.Item> requests) {
         final UpsertResults upsertResults = resultCollector.supplier().get();
-        collectFailingSourceUris(requests, upsertResults);
         collectFailingItems(requests, upsertResults);
 
         if (requests.itemsByMissingIndex.isEmpty()) {
@@ -169,13 +168,6 @@ public class ShardingUpsertExecutor
                 createPartitionsRequestOngoing = false;
                 return execRequests(requests, upsertResults);
             });
-    }
-
-    private static void collectFailingSourceUris(ShardedRequests<ShardUpsertRequest, ShardUpsertRequest.Item> requests,
-                                                 final UpsertResults upsertResults) {
-        for (Map.Entry<String, String> entry : requests.sourceUrisWithFailure.entrySet()) {
-            upsertResults.addUriFailure(entry.getKey(), entry.getValue());
-        }
     }
 
     private static void collectFailingItems(ShardedRequests<ShardUpsertRequest, ShardUpsertRequest.Item> requests,
