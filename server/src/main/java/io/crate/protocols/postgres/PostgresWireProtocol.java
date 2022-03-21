@@ -62,7 +62,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -190,7 +189,6 @@ import static io.crate.protocols.postgres.PostgresWireProtocol.State.STARTUP_HEA
 
 public class PostgresWireProtocol {
 
-    private static final Map<KeyData, Session> ACTIVE_SESSIONS = new HashMap<>();
     private static final Logger LOGGER = LogManager.getLogger(PostgresWireProtocol.class);
     private static final String PASSWORD_AUTH_NAME = "password";
 
@@ -204,6 +202,7 @@ public class PostgresWireProtocol {
     private final Authentication authService;
     private final SslReqHandler sslReqHandler;
     private final TasksService tasksService;
+    private final Map<KeyData, Session> activeSessions;
 
     private final KeyData keyData;
     private DelayableWriteChannel channel;
@@ -229,7 +228,8 @@ public class PostgresWireProtocol {
                          Function<SessionContext, AccessControl> getAcessControl,
                          Authentication authService,
                          TasksService tasksService,
-                         @Nullable SslContextProvider sslContextProvider) {
+                         @Nullable SslContextProvider sslContextProvider,
+                         Map<KeyData, Session> activeSessions) {
         this.sqlOperations = sqlOperations;
         this.getAccessControl = getAcessControl;
         this.authService = authService;
@@ -238,6 +238,7 @@ public class PostgresWireProtocol {
         this.decoder = new MessageDecoder();
         this.handler = new MessageHandler();
         this.keyData = new KeyData();
+        this.activeSessions = activeSessions;
     }
 
     private static void traceLogProtocol(int protocol) {
@@ -411,7 +412,7 @@ public class PostgresWireProtocol {
 
         private void closeSession() {
             if (session != null) {
-                ACTIVE_SESSIONS.remove(keyData);
+                activeSessions.remove(keyData);
                 session.close();
                 session = null;
             }
@@ -472,7 +473,7 @@ public class PostgresWireProtocol {
             User authenticatedUser = authContext.authenticate();
             String database = properties.getProperty("database");
             session = sqlOperations.createSession(database, authenticatedUser);
-            ACTIVE_SESSIONS.put(this.keyData, session);
+            activeSessions.put(this.keyData, session);
             Messages.sendAuthenticationOK(channel)
                 .addListener(f -> sendParams(channel))
                 .addListener(f -> Messages.sendKeyData(channel, keyData.pid, keyData.secretKey))
@@ -743,7 +744,7 @@ public class PostgresWireProtocol {
     private void handleClose(ByteBuf buffer, Channel channel) {
         byte b = buffer.readByte();
         String portalOrStatementName = readCString(buffer);
-        ACTIVE_SESSIONS.remove(this.keyData);
+        activeSessions.remove(this.keyData);
         session.close(b, portalOrStatementName);
         Messages.sendCloseComplete(channel);
     }
@@ -819,7 +820,7 @@ public class PostgresWireProtocol {
 
     private void handleCancelRequestBody(ByteBuf buffer, Channel channel) {
         var keyData = readCancelRequestBody(buffer);
-        Session s = ACTIVE_SESSIONS.get(keyData); // the session executing the target query
+        Session s = activeSessions.get(keyData); // the session executing the target query
         if (s == null) {
             return;
         }
@@ -911,7 +912,7 @@ public class PostgresWireProtocol {
         }
     }
 
-    private static class KeyData {
+    static class KeyData {
         private final int pid;
         private final int secretKey;
 

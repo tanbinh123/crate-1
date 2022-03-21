@@ -27,7 +27,9 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -36,6 +38,7 @@ import javax.annotation.Nullable;
 import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntSet;
 
+import io.crate.action.sql.Session;
 import io.crate.execution.jobs.TasksService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,6 +113,10 @@ public class PostgresNetty extends AbstractLifecycleComponent {
 
     private BorrowedItem<EventLoopGroup> eventLoopGroup;
 
+    // Due to how the current Itests are emulating multiple nodes within the same JVM,
+    // an active-sessions map is hoisted out of PostgresWireProtocol so that it is available per node for production setup as well as for testing.
+    private final Map<PostgresWireProtocol.KeyData, Session> activeSessions = new HashMap<>();
+
 
     @Inject
     public PostgresNetty(Settings settings,
@@ -167,7 +174,8 @@ public class PostgresNetty extends AbstractLifecycleComponent {
                     userManager::getAccessControl,
                     authentication,
                     tasksService,
-                    sslContextProvider);
+                    sslContextProvider,
+                    new HashMap<>());
                 pipeline.addLast("frame-decoder", postgresWireProtocol.decoder);
                 pipeline.addLast("handler", postgresWireProtocol.handler);
             }

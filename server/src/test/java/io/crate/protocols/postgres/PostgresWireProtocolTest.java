@@ -58,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -122,7 +123,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 mock(SQLOperations.class),
                 sessionContext -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> null),
-                null, null);
+                null, null, new HashMap<>());
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
 
         ByteBuf buffer = Unpooled.buffer();
@@ -164,7 +165,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 sqlOperations,
                 sessionContext -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> User.CRATE_USER),
-                null, null);
+                null, null, new HashMap<>());
         AtomicBoolean flushed = new AtomicBoolean(false);
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler) {
             @Override
@@ -192,7 +193,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 sqlOperations,
                 sessionContext -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> User.CRATE_USER),
-                null, null);
+                null, null, new HashMap<>());
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
 
         ByteBuf buffer = Unpooled.buffer();
@@ -217,7 +218,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 sqlOperations,
                 sessionContext -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> User.CRATE_USER),
-                null, null);
+                null, null, new HashMap<>());
 
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
         {
@@ -275,7 +276,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 sqlOperations,
                 sessionContext -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> User.CRATE_USER),
-                null, null);
+                null, null, new HashMap<>());
 
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
         {
@@ -337,7 +338,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 sqlOperations,
                 sessionContext -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> User.CRATE_USER),
-                null, null);
+                null, null, new HashMap<>());
 
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
         {
@@ -393,7 +394,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 mock(SQLOperations.class),
                 sessionContext -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> null),
-                null, null);
+                null, null, new HashMap<>());
 
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
 
@@ -421,7 +422,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
         PostgresWireProtocol ctx = new PostgresWireProtocol(
             sqlOperations, sessionContext -> AccessControl.DISABLED, new AlwaysOKAuthentication(userName -> User.CRATE_USER),
             null,
-            null);
+            null, new HashMap<>());
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
 
         ByteBuf buf = Unpooled.buffer();
@@ -475,7 +476,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                         };
                     }
                 },
-                null, null);
+                null, null, new HashMap<>());
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
 
         ByteBuf respBuf;
@@ -512,7 +513,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 sqlOperations,
                 sessionContext -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> User.CRATE_USER),
-                null, null);
+                null, null, new HashMap<>());
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
 
         ByteBuf buffer = Unpooled.buffer();
@@ -562,7 +563,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
                 sqlOperations,
                 sessionCtx -> AccessControl.DISABLED,
                 new AlwaysOKAuthentication(userName -> User.CRATE_USER),
-                null, null);
+                null, null, new HashMap<>());
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
 
         if (failure != null) {

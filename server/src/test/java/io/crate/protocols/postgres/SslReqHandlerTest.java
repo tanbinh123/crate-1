@@ -41,6 +41,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -72,11 +73,11 @@ public class SslReqHandlerTest extends ESTestCase {
     public void testSslReqHandler() {
         PostgresWireProtocol ctx =
             new PostgresWireProtocol(
-                mock(SQLOperations.class),
+                    mock(SQLOperations.class),
                 sessionContext -> AccessControl.DISABLED,
-                new AlwaysOKAuthentication(userName -> null),
-                // use a simple ssl context
-                null, getSelfSignedSslContextProvider());
+                    new AlwaysOKAuthentication(userName -> null),
+                    // use a simple ssl context
+                    null, getSelfSignedSslContextProvider(), new HashMap<>());
 
         channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
 
