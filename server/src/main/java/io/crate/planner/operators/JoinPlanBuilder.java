@@ -24,6 +24,7 @@ package io.crate.planner.operators;
 import io.crate.analyze.relations.AnalyzedRelation;
 import io.crate.analyze.relations.JoinPair;
 import io.crate.analyze.relations.QuerySplitter;
+import io.crate.common.annotations.VisibleForTesting;
 import io.crate.common.collections.Lists2;
 import io.crate.execution.engine.join.JoinOperations;
 import io.crate.expression.operator.AndOperator;
@@ -32,8 +33,10 @@ import io.crate.expression.symbol.Symbol;
 import io.crate.metadata.RelationName;
 import io.crate.planner.node.dql.join.JoinType;
 import javax.annotation.Nullable;
+
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -65,8 +68,9 @@ public class JoinPlanBuilder {
         if (from.size() == 1) {
             return Filter.create(plan.apply(from.get(0)), whereClause);
         }
-        Map<Set<RelationName>, Symbol> queryParts = QuerySplitter.split(whereClause);
-        List<JoinPair> allJoinPairs = JoinOperations.convertImplicitJoinConditionsToJoinPairs(joinPairs, queryParts);
+        final Map<Set<RelationName>, Symbol> queryParts = QuerySplitter.split(whereClause);
+        var joinPairsWithNonConstantConditions = Lists2.map(joinPairs, joinPair -> extractConstantJoinConditions(joinPair, queryParts));
+        List<JoinPair> allJoinPairs = JoinOperations.convertImplicitJoinConditionsToJoinPairs(joinPairsWithNonConstantConditions, queryParts);
         boolean optimizeOrder = true;
         for (var joinPair : allJoinPairs) {
             if (hasAdditionalDependencies(joinPair)) {
@@ -258,5 +262,32 @@ public class JoinPlanBuilder {
             }
         }
         return null;
+    }
+
+    @VisibleForTesting
+    static JoinPair extractConstantJoinConditions(JoinPair joinPair, Map<Set<RelationName>, Symbol> result) {
+        if (joinPair.condition() != null && joinPair.joinType() == JoinType.INNER) {
+            var splitConditions = QuerySplitter.split(joinPair.condition());
+            if (!splitConditions.isEmpty()) {
+                var constantConditionExtracted = false;
+                var nonConstantConditions = new HashMap<Set<RelationName>, Symbol>(splitConditions.size());
+                for (var entry : splitConditions.entrySet()) {
+                    var value = entry.getValue();
+                    if (ConstantCondition.check(value)) {
+                        constantConditionExtracted = true;
+                        result.put(entry.getKey(), value);
+                    } else {
+                        nonConstantConditions.put(entry.getKey(), value);
+                    }
+                }
+                if (!nonConstantConditions.isEmpty()) {
+                    if (constantConditionExtracted) {
+                        var joinCondition = AndOperator.join(nonConstantConditions.values());
+                        return JoinPair.of(joinPair.left(), joinPair.right(), joinPair.joinType(), joinCondition);
+                    }
+                }
+            }
+        }
+        return joinPair;
     }
 }
