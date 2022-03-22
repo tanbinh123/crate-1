@@ -39,7 +39,7 @@ import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntSet;
 
 import io.crate.action.sql.Session;
-import io.crate.execution.jobs.TasksService;
+import io.crate.execution.jobs.kill.TransportKillJobsNodeAction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
@@ -88,7 +88,7 @@ public class PostgresNetty extends AbstractLifecycleComponent {
 
     private final SQLOperations sqlOperations;
     private final NetworkService networkService;
-    private final TasksService tasksService;
+    private final TransportKillJobsNodeAction transportKillJobsNodeAction;
 
     private final boolean enabled;
     private final String[] bindHosts;
@@ -123,7 +123,7 @@ public class PostgresNetty extends AbstractLifecycleComponent {
                          SQLOperations sqlOperations,
                          UserManager userManager,
                          NetworkService networkService,
-                         TasksService tasksService,
+                         TransportKillJobsNodeAction transportKillJobsNodeAction,
                          Authentication authentication,
                          NettyBootstrap nettyBootstrap,
                          SslContextProvider sslContextProvider) {
@@ -134,7 +134,7 @@ public class PostgresNetty extends AbstractLifecycleComponent {
         this.networkService = networkService;
         this.authentication = authentication;
         this.nettyBootstrap = nettyBootstrap;
-        this.tasksService = tasksService;
+        this.transportKillJobsNodeAction = transportKillJobsNodeAction;
 
         if (SslSettings.isPSQLSslEnabled(settings)) {
             namedLogger.info("PSQL SSL support is enabled.");
@@ -173,9 +173,9 @@ public class PostgresNetty extends AbstractLifecycleComponent {
                     sqlOperations,
                     userManager::getAccessControl,
                     authentication,
-                    tasksService,
+                    transportKillJobsNodeAction,
                     sslContextProvider,
-                    new HashMap<>());
+                    activeSessions);
                 pipeline.addLast("frame-decoder", postgresWireProtocol.decoder);
                 pipeline.addLast("handler", postgresWireProtocol.handler);
             }

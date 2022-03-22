@@ -21,6 +21,7 @@
 
 package io.crate.protocols.postgres;
 
+import com.amazonaws.services.s3.internal.eventstreaming.MessageDecoder;
 import io.crate.action.sql.DescribeResult;
 import io.crate.action.sql.ResultReceiver;
 import io.crate.action.sql.SQLOperations;
@@ -30,7 +31,8 @@ import io.crate.auth.Authentication;
 import io.crate.auth.AuthenticationMethod;
 import io.crate.auth.Protocol;
 import io.crate.auth.AccessControl;
-import io.crate.execution.jobs.TasksService;
+import io.crate.execution.jobs.kill.KillJobsRequest;
+import io.crate.execution.jobs.kill.TransportKillJobsNodeAction;
 import io.crate.user.User;
 import io.crate.common.annotations.VisibleForTesting;
 import io.crate.common.collections.Lists2;
@@ -201,7 +203,7 @@ public class PostgresWireProtocol {
     private final Function<SessionContext, AccessControl> getAccessControl;
     private final Authentication authService;
     private final SslReqHandler sslReqHandler;
-    private final TasksService tasksService;
+    private final TransportKillJobsNodeAction transportKillJobsNodeAction;
     private final Map<KeyData, Session> activeSessions;
 
     private final KeyData keyData;
@@ -227,13 +229,13 @@ public class PostgresWireProtocol {
     PostgresWireProtocol(SQLOperations sqlOperations,
                          Function<SessionContext, AccessControl> getAcessControl,
                          Authentication authService,
-                         TasksService tasksService,
+                         TransportKillJobsNodeAction transportKillJobsNodeAction,
                          @Nullable SslContextProvider sslContextProvider,
                          Map<KeyData, Session> activeSessions) {
         this.sqlOperations = sqlOperations;
         this.getAccessControl = getAcessControl;
         this.authService = authService;
-        this.tasksService = tasksService;
+        this.transportKillJobsNodeAction = transportKillJobsNodeAction;
         this.sslReqHandler = new SslReqHandler(sslContextProvider);
         this.decoder = new MessageDecoder();
         this.handler = new MessageHandler();
@@ -821,10 +823,14 @@ public class PostgresWireProtocol {
     private void handleCancelRequestBody(ByteBuf buffer, Channel channel) {
         var keyData = readCancelRequestBody(buffer);
         Session s = activeSessions.get(keyData); // the session executing the target query
-        if (s == null) {
-            return;
+        if (s != null) {
+            String userName = s.sessionContext().sessionUser().name();
+            transportKillJobsNodeAction.broadcast(
+                new KillJobsRequest(List.of(s.getActiveJobID()), userName, "Cancellation requested by: " + userName));
+        } else {
+            LOGGER.trace("Cancellation request is ignored since the corresponding session cannot be found with the given KeyData");
         }
-        tasksService.killJobs(List.of(s.getActiveJobID()), "crate", null);
+        handleClose(buffer, channel);
     }
 
 
