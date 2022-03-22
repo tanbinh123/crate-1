@@ -21,7 +21,6 @@
 
 package io.crate.protocols.postgres;
 
-import com.amazonaws.services.s3.internal.eventstreaming.MessageDecoder;
 import io.crate.action.sql.DescribeResult;
 import io.crate.action.sql.ResultReceiver;
 import io.crate.action.sql.SQLOperations;
@@ -243,11 +242,11 @@ public class PostgresWireProtocol {
         this.activeSessions = activeSessions;
     }
 
-    private static void traceLogProtocol(int protocol) {
+    private static void traceLogRequestCode(int requestCode) {
         if (LOGGER.isTraceEnabled()) {
-            int major = protocol >> 16;
-            int minor = protocol & 0x0000FFFF;
-            LOGGER.trace("protocol {}.{}", major, minor);
+            int major = requestCode >> 16;
+            int minor = requestCode & 0x0000FFFF;
+            LOGGER.trace("requestCode {}.{}", major, minor);
         }
     }
 
@@ -863,17 +862,17 @@ public class PostgresWireProtocol {
                     }
                 /*
                  * StartupMessage:
-                 * | int32 length | int32 protocol | [ string paramKey | string paramValue , ... ]
+                 * | int32 length | int32 requestCode | [ string paramKey | string paramValue , ... ]
                  */
                 case STARTUP_HEADER:
                     if (buffer.readableBytes() < 8) {
                         return null;
                     }
-                    msgLength = buffer.readInt() - 8; // exclude length itself and protocol
+                    msgLength = buffer.readInt() - 8; // exclude length itself and requestCode
                     LOGGER.trace("Header pkgLength: {}", msgLength);
-                    int protocol = buffer.readInt();
-                    traceLogProtocol(protocol);
-                    return nullOrBuffer(buffer, nextState(protocol));
+                    int requestCode = buffer.readInt();
+                    traceLogRequestCode(requestCode);
+                    return nullOrBuffer(buffer, nextState(requestCode));
                 /*
                  * Regular Data Packet:
                  * | char tag | int32 len | payload
@@ -908,12 +907,16 @@ public class PostgresWireProtocol {
             return buffer.readBytes(msgLength);
         }
 
-        private State nextState(int protocol) {
-            switch (protocol) {
+        private State nextState(int requestCode) {
+            // more information on postgres requestCode:
+            // https://www.postgresql.org/docs/current/protocol-message-formats.html
+            switch (requestCode) {
                 case 80877102:
                     return State.CANCEL_BODY;
-                default:
+                case 196608:
                     return State.STARTUP_BODY;
+                default:
+                    throw new IllegalStateException("The given request code is invalid or not yet supported: " + requestCode);
             }
         }
     }

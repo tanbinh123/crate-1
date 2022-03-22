@@ -45,7 +45,7 @@ class ClientMessages {
         byte[] dbKey = "database".getBytes(StandardCharsets.UTF_8);
         byte[] dbValue = dbName.getBytes(StandardCharsets.UTF_8);
         buffer.writeInt(8 + dbKey.length + 1 + dbValue.length + 1);
-        buffer.writeInt(3);
+        buffer.writeInt(3 << 16);
         buffer.writeBytes(dbKey);
         buffer.writeByte(0);
         buffer.writeBytes(dbValue);
