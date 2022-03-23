@@ -547,6 +547,11 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
         readReadyForQueryMessage(channel);
     }
 
+    @Test
+    public void testCancelRequest() {
+        //sendStartupMessage();
+    }
+
     private void submitQueriesThroughSimpleQueryMode(String statements, @Nullable Throwable failure) {
         SQLOperations sqlOperations = Mockito.mock(SQLOperations.class);
         Session session = mock(Session.class);
@@ -578,6 +583,7 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
         sendStartupMessage(channel);
         readAuthenticationOK(channel);
         skipParameterMessages(channel);
+        readKeyData(channel);
         readReadyForQueryMessage(channel);
 
         ByteBuf query = Unpooled.buffer();
@@ -621,6 +627,18 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
             resp.release();
         }
     }
+
+    private static PostgresWireProtocol.KeyData readKeyData(EmbeddedChannel channel) {
+        ByteBuf response = channel.readOutbound();
+        // KeyData: 'K' | int32 len | int32 process id | int32 secret key
+        assertThat((char)response.readByte(), is('K'));
+        assertThat(response.readInt(), is(12));
+        // keyData needs a separate validation
+        int pid = response.readInt();
+        int secretKey = response.readInt();
+        response.release();
+        return new PostgresWireProtocol.KeyData(pid, secretKey);
+    };
 
     private static void readReadyForQueryMessage(EmbeddedChannel channel) {
         ByteBuf response = channel.readOutbound();
