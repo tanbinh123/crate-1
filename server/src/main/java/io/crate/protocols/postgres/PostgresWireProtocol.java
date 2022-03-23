@@ -205,7 +205,8 @@ public class PostgresWireProtocol {
     private final TransportKillJobsNodeAction transportKillJobsNodeAction;
     private final Map<KeyData, Session> activeSessions;
 
-    private final KeyData keyData;
+    @VisibleForTesting
+    final KeyData keyData;
     private DelayableWriteChannel channel;
     private int msgLength;
     private byte msgType;
@@ -951,6 +952,14 @@ public class PostgresWireProtocol {
         @Override
         public int hashCode() {
             return Objects.hash(pid, secretKey);
+        }
+
+        public int getPid() {
+            return pid;
+        }
+
+        public int getSecretKey() {
+            return secretKey;
         }
     }
 }

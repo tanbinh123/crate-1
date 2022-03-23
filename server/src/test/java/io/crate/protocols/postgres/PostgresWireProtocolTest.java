@@ -29,6 +29,9 @@ import io.crate.auth.Authentication;
 import io.crate.auth.AuthenticationMethod;
 import io.crate.auth.AccessControl;
 import io.crate.auth.AlwaysOKAuthentication;
+import io.crate.execution.jobs.TasksService;
+import io.crate.execution.jobs.kill.KillJobsRequest;
+import io.crate.execution.jobs.kill.TransportKillJobsNodeAction;
 import io.crate.user.User;
 import io.crate.user.UserManager;
 import io.crate.exceptions.JobKilledException;
@@ -45,12 +48,17 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.elasticsearch.Version;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.UUIDs;
 import org.elasticsearch.common.inject.Provider;
 import org.elasticsearch.common.settings.SecureString;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.transport.TransportService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import javax.annotation.Nullable;
@@ -61,6 +69,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -548,8 +557,48 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
     }
 
     @Test
+    public void testKeyDataSentDuringStartUp() {
+        PostgresWireProtocol ctx =
+            new PostgresWireProtocol(
+                sqlOperations,
+                sessionContext -> AccessControl.DISABLED,
+                new AlwaysOKAuthentication(userName -> User.CRATE_USER),
+                null, null, new HashMap<>());
+
+        channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
+        sendStartupMessage(channel);
+        readAuthenticationOK(channel);
+        skipParameterMessages(channel);
+        assertThat(readKeyData(channel), is(ctx.keyData));
+    }
+
+    @Test
     public void testCancelRequest() {
-        //sendStartupMessage();
+        TransportKillJobsNodeAction mockedKillAction = mock(TransportKillJobsNodeAction.class);
+
+        UUID targetJobID = UUIDs.dirtyUUID();
+        Session targetSession = mock(Session.class);
+        when(targetSession.getActiveJobID()).thenReturn(targetJobID);
+        SessionContext sessionContext = new SessionContext(User.CRATE_USER);
+        when(targetSession.sessionContext()).thenReturn(sessionContext);
+
+        var targetKeyData = new PostgresWireProtocol.KeyData();
+        var sessionToCancel = Map.of(targetKeyData, targetSession);
+        PostgresWireProtocol ctx =
+            new PostgresWireProtocol(
+                sqlOperations,
+                context -> AccessControl.DISABLED,
+                new AlwaysOKAuthentication(userName -> User.CRATE_USER),
+                mockedKillAction, null, sessionToCancel);
+        channel = new EmbeddedChannel(ctx.decoder, ctx.handler);
+
+        sendCancelRequest(channel, targetKeyData);
+
+        // kill invoked with the target jobID
+        ArgumentCaptor<KillJobsRequest> arg = ArgumentCaptor.forClass(KillJobsRequest.class);
+        verify(mockedKillAction).broadcast(arg.capture());
+        KillJobsRequest capturedKillJobRequest = arg.<KillJobsRequest> getValue();
+        assertThat(capturedKillJobRequest.toKill(), is(List.of(targetJobID)));
     }
 
     private void submitQueriesThroughSimpleQueryMode(String statements, @Nullable Throwable failure) {
@@ -600,6 +649,13 @@ public class PostgresWireProtocolTest extends CrateDummyClusterServiceUnitTest {
         ByteBuf startupMsg = Unpooled.buffer();
         ClientMessages.sendStartupMessage(startupMsg, "db");
         channel.writeInbound(startupMsg);
+        channel.releaseInbound();
+    }
+
+    private static void sendCancelRequest(EmbeddedChannel channel, PostgresWireProtocol.KeyData keyData) {
+        ByteBuf cancelRequest = Unpooled.buffer();
+        ClientMessages.sendCancelRequest(cancelRequest, keyData);
+        channel.writeInbound(cancelRequest);
         channel.releaseInbound();
     }
 

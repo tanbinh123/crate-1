@@ -151,4 +151,11 @@ class ClientMessages {
         buffer.writeByte('X');
         buffer.writeInt(4);
     }
+
+    static void sendCancelRequest(ByteBuf buffer, PostgresWireProtocol.KeyData keyData) {
+        buffer.writeInt(16);
+        buffer.writeInt(1234 << 16 | 5678); // == 80877102
+        buffer.writeInt(keyData.getPid());
+        buffer.writeInt(keyData.getSecretKey());
+    }
 }
