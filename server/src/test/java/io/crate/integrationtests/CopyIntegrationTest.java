@@ -1052,27 +1052,27 @@ public class CopyIntegrationTest extends SQLHttpIntegrationTest {
 
         // Checking out all variants from https://github.com/crate/crate/issues/12201#issuecomment-1072472337
 
+        // Intentionally "sandwiching" valid line between 2 invalids as there used to be test failure depending on the valid/invalid order.
         List<String> lines = List.of(
-          "obj\n",
-
-            "\"{\"\"x\"\":1}\"\n",  // "{""x"":1}" - works,
-            "1,2\n"
-
-
-         // "\"{\"x\":1}\"\n"        // "{"x":1}"
-//          "\"'{\"\"x\"\":1}'\"\n", // "'{""x"":1}'"
-//          "\"{\"x\" = 1}\"\n",     // "{"x" = 1}"
-//          "\"{\"\"x\"\" = 1}\"\n", // "{""x"" = 1}"
-//          "{\"\"x\"\":1}\n",       // {""x"":1}
-        //  "{\"x\":1}\n"              // {"x":1} - works
-//          "{\"x\" = 1}\n",         // {"x" = 1}
-//          "{x = 1}\n"              // {x = 1}
+            "obj\n",
+            "1,2\n",
+            "\"{\"\"x\"\":1}\"\n",   // "{""x"":1}" - works
+            "3,4\n",
+            "\"{\"x\":1}\"\n",       // "{"x":1}"
+            "\"'{\"\"x\"\":1}'\"\n", // "'{""x"":1}'"
+            "\"{\"x\" = 1}\"\n",     // "{"x" = 1}"
+            "\"{\"\"x\"\" = 1}\"\n", // "{""x"" = 1}"
+            "{\"\"x\"\":1}\n",       // {""x"":1}
+            "{\"x\":1}\n",           // {"x":1} - works
+            "{\"x\" = 1}\n",         // {"x" = 1}
+            "{x = 1}\n"              // {x = 1}
         );
 
         File file = folder.newFile(UUID.randomUUID() + ".csv");
         Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
         execute("copy t from ? with (shared = true) return summary", new Object[]{Paths.get(file.toURI()).toUri().toString()});
-        assertThat(printedTable(response.rows()),
-            containsString("error_count"));
+        assertThat(response.rows()[0][2], is(2L));
+        assertThat(response.rows()[0][3], is(9L));
+
     }
 }
