@@ -24,21 +24,19 @@ package io.crate.execution.engine.indexing;
 import io.crate.breaker.RamAccounting;
 import io.crate.execution.dml.ShardRequest;
 
+import io.crate.sql.tree.ArraySubQueryExpression;
 import org.apache.lucene.util.Accountable;
 import org.elasticsearch.common.lease.Releasable;
 import org.elasticsearch.index.shard.ShardId;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 public final class ShardedRequests<TReq extends ShardRequest<TReq, TItem>, TItem extends ShardRequest.Item>
     implements Accountable, Releasable {
 
     final Map<String, List<ItemAndRoutingAndSourceInfo<TItem>>> itemsByMissingIndex = new HashMap<>();
-    final Map<String, List<ReadFailureAndLineNumber>> itemsWithFailureBySourceUri = new HashMap<>();
+    final Map<String, Set<ReadFailureAndLineNumber>> itemsWithFailureBySourceUri = new HashMap<>();
     final List<RowSourceInfo> rowSourceInfos = new ArrayList<>();
     final Map<ShardLocation, TReq> itemsByShard = new HashMap<>();
 
@@ -80,8 +78,8 @@ public final class ShardedRequests<TReq extends ShardRequest<TReq, TItem>, TItem
     }
 
     void addFailedItem(String sourceUri, String readFailure, Long lineNumber) {
-        List<ReadFailureAndLineNumber> itemsWithFailure = itemsWithFailureBySourceUri.computeIfAbsent(
-            sourceUri, k -> new ArrayList<>());
+        Set<ReadFailureAndLineNumber> itemsWithFailure = itemsWithFailureBySourceUri.computeIfAbsent(
+            sourceUri, k -> new HashSet<>());
         itemsWithFailure.add(new ReadFailureAndLineNumber(readFailure, lineNumber));
     }
 
@@ -125,6 +123,19 @@ public final class ShardedRequests<TReq extends ShardRequest<TReq, TItem>, TItem
         ReadFailureAndLineNumber(String readFailure, long lineNumber) {
             this.readFailure = readFailure;
             this.lineNumber = lineNumber;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            ReadFailureAndLineNumber that = (ReadFailureAndLineNumber) obj;
+            return Objects.equals(this.readFailure, that.readFailure);
+        }
+
+        @Override
+        public int hashCode() {
+            return readFailure.hashCode();
         }
     }
 
