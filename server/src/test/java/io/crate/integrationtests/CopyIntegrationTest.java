@@ -27,7 +27,15 @@ import static io.crate.testing.Asserts.assertThrowsMatches;
 import static io.crate.testing.SQLErrorMatcher.isSQLError;
 import static io.crate.testing.TestingHelpers.printedTable;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
 
 import java.io.File;
@@ -796,12 +804,8 @@ public class CopyIntegrationTest extends SQLHttpIntegrationTest {
         for (Object[] row : response.rows()) {
             assertThat((String) row[1], endsWith(filename));
             assertThat(row[2], is(0L));
-            assertThat(row[3], is(2L));
-            assertThat(((Map<String, Object>) row[4]).keySet(),
-                containsInAnyOrder(
-                    containsString(expected),
-                    containsString("A primary key value must not be NULL"))
-            );
+            assertThat(row[3], is(1L));
+            assertThat(((Map<String, Object>) row[4]).keySet(), contains(containsString(expected)));
         }
 
         // with shared=true, only 1 data node must try to process the uri
@@ -811,13 +815,8 @@ public class CopyIntegrationTest extends SQLHttpIntegrationTest {
         for (Object[] row : response.rows()) {
             assertThat((String) row[1], endsWith(filename));
             assertThat(row[2], is(0L));
-            assertThat(row[3], is(2L));
-            assertThat(((Map<String, Object>) row[4]).keySet(),
-                containsInAnyOrder(
-                    containsString(expected),
-                    containsString("A primary key value must not be NULL")
-                )
-            );
+            assertThat(row[3], is(1L));
+            assertThat(((Map<String, Object>) row[4]).keySet(), contains(containsString(expected)));
         }
 
         // with shared=true and wildcards all nodes will try to match a file
@@ -828,13 +827,8 @@ public class CopyIntegrationTest extends SQLHttpIntegrationTest {
         for (Object[] row : response.rows()) {
             assertThat((String) row[1], endsWith("*.json"));
             assertThat(row[2], is(0L));
-            assertThat(row[3], is(2L));
-            assertThat(((Map<String, Object>) row[4]).keySet(),
-                containsInAnyOrder(
-                    containsString("Cannot find any URI matching:"),
-                    containsString("A primary key value must not be NULL")
-                )
-            );
+            assertThat(row[3], is(1L));
+            assertThat(((Map<String, Object>) row[4]).keySet(), contains(containsString("Cannot find any URI matching:")));
         }
     }
 

@@ -117,11 +117,6 @@ public final class GroupRowsByShard<TReq extends ShardRequest<TReq, TItem>, TIte
         uriFailureRecorder.accept(shardedRequests);
 
         try {
-            rowShardResolver.setNextRow(row);
-            for (int i = 0; i < expressions.size(); i++) {
-                expressions.get(i).setNextRow(row);
-            }
-
             String id = rowShardResolver.id();
             TItem item = itemFactory.apply(id);
 
@@ -129,6 +124,12 @@ public final class GroupRowsByShard<TReq extends ShardRequest<TReq, TItem>, TIte
 
                 // If CSV line parsing fails insertValues array will contain single null value.
                 // We don't need to include such item into request as it's already failed on parsing and included into summary.
+
+                rowShardResolver.setNextRow(row);
+                for (int i = 0; i < expressions.size(); i++) {
+                    expressions.get(i).setNextRow(row);
+                }
+
 
                 String indexName = indexNameResolver.get();
                 String routing = rowShardResolver.routing();
