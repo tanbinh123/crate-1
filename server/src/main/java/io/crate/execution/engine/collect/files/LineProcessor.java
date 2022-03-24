@@ -61,7 +61,9 @@ public final class LineProcessor {
     }
 
     public void setFailure(String failure) {
-        lineContext.rawSource(null); // remove prev value
+        if (failure!= null) {
+            lineContext.rawSource(null); // remove prev value
+        }
         lineContext.setCurrentUriFailure(failure);
     }
 }

@@ -1054,8 +1054,9 @@ public class CopyIntegrationTest extends SQLHttpIntegrationTest {
 
         List<String> lines = List.of(
           "obj\n",
-            "1,2\n",
-            "\"{\"\"x\"\":1}\"\n"  // "{""x"":1}" - works
+
+            "\"{\"\"x\"\":1}\"\n",  // "{""x"":1}" - works,
+            "1,2\n"
 
 
          // "\"{\"x\":1}\"\n"        // "{"x":1}"
