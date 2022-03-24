@@ -167,6 +167,7 @@ public class FileReadingIterator implements BatchIterator<Row> {
                     return moveNext();
                 }
                 lineProcessor.process(line);
+                lineProcessor.setFailure(null); //TODO (comment why)
                 return true;
             } else if (currentInputUriIterator != null && currentInputUriIterator.hasNext()) {
                 advanceToNextUri(currentInput);
