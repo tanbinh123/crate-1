@@ -167,7 +167,8 @@ public class FileReadingIterator implements BatchIterator<Row> {
                     return moveNext();
                 }
                 lineProcessor.process(line);
-                lineProcessor.setFailure(null); //TODO (comment why)
+                // We need to explicitly reset failure as it might hold non-null result of gracefully failed previous iteration
+                lineProcessor.setFailure(null);
                 return true;
             } else if (currentInputUriIterator != null && currentInputUriIterator.hasNext()) {
                 advanceToNextUri(currentInput);

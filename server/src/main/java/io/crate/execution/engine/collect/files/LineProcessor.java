@@ -25,6 +25,7 @@ import io.crate.analyze.CopyFromParserProperties;
 import io.crate.execution.dsl.phases.FileUriCollectPhase.InputFormat;
 import io.crate.expression.reference.file.LineContext;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URI;
@@ -60,8 +61,10 @@ public final class LineProcessor {
         lineContext.rawSource(jsonByteArray);
     }
 
-    public void setFailure(String failure) {
-        if (failure!= null) {
+    public void setFailure(@Nullable String failure) {
+        if (failure != null) {
+            // We need to explicitly reset source as it might hold non-null result of succeeded previous iteration.
+            // But source must be reset only if current failure != null - otherwise it just means we are resetting failure and should not touch source.
             lineContext.rawSource(null); // remove prev value
         }
         lineContext.setCurrentUriFailure(failure);

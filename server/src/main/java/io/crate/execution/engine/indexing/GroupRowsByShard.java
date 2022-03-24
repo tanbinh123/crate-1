@@ -133,22 +133,22 @@ public final class GroupRowsByShard<TReq extends ShardRequest<TReq, TItem>, TIte
                 upsertRequestItem.insertValues().length > 0
                 && upsertRequestItem.insertValues()[0] != null) {
 
-                    // If CSV line parsing fails insertValues array will contain single null value.
-                    // We don't need to include such item into request as it's alredy failed on parsing and included into summary.
+                // If CSV line parsing fails insertValues array will contain single null value.
+                // We don't need to include such item into request as it's alredy failed on parsing and included into summary.
 
-                    String indexName = indexNameResolver.get();
-                    String routing = rowShardResolver.routing();
-                    String sourceUri = sourceUriInput.value();
-                    Long lineNumber = lineNumberInput.value();
+                String indexName = indexNameResolver.get();
+                String routing = rowShardResolver.routing();
+                String sourceUri = sourceUriInput.value();
+                Long lineNumber = lineNumberInput.value();
 
-                    RowSourceInfo rowSourceInfo = RowSourceInfo.emptyMarkerOrNewInstance(sourceUri, lineNumber);
-                    ShardLocation shardLocation = getShardLocation(indexName, id, routing);
-                    long sizeEstimate = estimateRowSize.applyAsLong(row);
-                    if (shardLocation == null) {
-                        shardedRequests.add(item, sizeEstimate, indexName, routing, rowSourceInfo);
-                    } else {
-                        shardedRequests.add(item, sizeEstimate, shardLocation, rowSourceInfo);
-                    }
+                RowSourceInfo rowSourceInfo = RowSourceInfo.emptyMarkerOrNewInstance(sourceUri, lineNumber);
+                ShardLocation shardLocation = getShardLocation(indexName, id, routing);
+                long sizeEstimate = estimateRowSize.applyAsLong(row);
+                if (shardLocation == null) {
+                    shardedRequests.add(item, sizeEstimate, indexName, routing, rowSourceInfo);
+                } else {
+                    shardedRequests.add(item, sizeEstimate, shardLocation, rowSourceInfo);
+                }
             }
         } catch (CircuitBreakingException e) {
             throw e;

@@ -46,7 +46,9 @@ public class UpsertResultContext {
             }
 
             @Override
-            Consumer<ShardedRequests> getUriFailureRecorder() { return (s) -> {}; }
+            Consumer<ShardedRequests> getUriFailureRecorder() {
+                return (s) -> {};
+            }
         };
     }
 
@@ -60,7 +62,9 @@ public class UpsertResultContext {
             }
 
             @Override
-            Consumer<ShardedRequests> getUriFailureRecorder() { return (s) -> {}; }
+            Consumer<ShardedRequests> getUriFailureRecorder() {
+                return (s) -> {};
+            }
         };
     }
 
