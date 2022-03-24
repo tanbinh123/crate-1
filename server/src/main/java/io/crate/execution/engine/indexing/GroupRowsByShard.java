@@ -33,7 +33,6 @@ import java.util.function.ToLongFunction;
 
 import javax.annotation.Nullable;
 
-import io.crate.execution.dml.upsert.ShardUpsertRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.cluster.routing.ShardIterator;
@@ -126,15 +125,10 @@ public final class GroupRowsByShard<TReq extends ShardRequest<TReq, TItem>, TIte
             String id = rowShardResolver.id();
             TItem item = itemFactory.apply(id);
 
-            if (item instanceof ShardUpsertRequest.Item upsertRequestItem
-                &&
-                upsertRequestItem.insertValues() != null
-                &&
-                upsertRequestItem.insertValues().length > 0
-                && upsertRequestItem.insertValues()[0] != null) {
+            if (!item.skip()) {
 
                 // If CSV line parsing fails insertValues array will contain single null value.
-                // We don't need to include such item into request as it's alredy failed on parsing and included into summary.
+                // We don't need to include such item into request as it's already failed on parsing and included into summary.
 
                 String indexName = indexNameResolver.get();
                 String routing = rowShardResolver.routing();

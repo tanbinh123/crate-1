@@ -118,7 +118,12 @@ public class IndexWriterProjector implements Projector {
             validation);
 
         Function<String, ShardUpsertRequest.Item> itemFactory =
-            id -> new ShardUpsertRequest.Item(id, null, new Object[]{source.value()}, null, null, null);
+            id -> {
+                Object[] sourceValue = new Object[]{source.value()};
+                var item = new ShardUpsertRequest.Item(id, null, sourceValue, null, null, null);
+                item.skip(sourceValue != null && sourceValue.length > 0 && sourceValue[0] == null);
+                return item;
+            };
 
         Predicate<UpsertResults> earlyTerminationCondition = results -> failFast && results.containsErrors();
 

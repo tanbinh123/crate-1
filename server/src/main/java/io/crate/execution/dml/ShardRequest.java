@@ -122,6 +122,12 @@ public abstract class ShardRequest<T extends ShardRequest<T, I>, I extends Shard
         private int location = -1;
         protected long seqNo = SequenceNumbers.UNASSIGNED_SEQ_NO;
         protected long primaryTerm = SequenceNumbers.UNASSIGNED_PRIMARY_TERM;
+        /**
+         * Indicates whether item can be added to the ShardedRequests.
+         * Doesn't have to be streamed as items with non-default value 'true'
+         * will never be part of a request.
+         */
+        protected boolean skip;
 
         public Item(String id) {
             this.id = id;
@@ -169,6 +175,14 @@ public abstract class ShardRequest<T extends ShardRequest<T, I>, I extends Shard
 
         public void primaryTerm(long primaryTerm) {
             this.primaryTerm = primaryTerm;
+        }
+
+        public boolean skip() {
+            return skip;
+        }
+
+        public void skip(boolean skip) {
+            this.skip = skip;
         }
 
         public void writeTo(StreamOutput out) throws IOException {
